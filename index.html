@@ -6,7 +6,7 @@
   <title>Заработок на рекламе — Monetag</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <!-- Monetag SDK — замени data-zone на свой ID -->
+  <!-- Monetag SDK -->
   <script src="https://a.monetag.com/tma/sdk.js"
           data-zone="9687002"
           data-sdk="show_9687002"></script>
@@ -26,16 +26,14 @@
 <div class="card">
   <h1>Смотри рекламу — зарабатывай</h1>
   <p>Текущий баланс: <span id="balance">0.00</span> монет</p>
-  <button id="watch">▶ Смотреть рекламу</button>
+  <button id="watch" disabled>Загрузка рекламы...</button>
   <div id="status"></div>
 </div>
 
 <script>
-  // Telegram WebApp
   const tg = window.Telegram?.WebApp;
   if (tg) tg.expand();
 
-  // Храним баланс в localStorage
   function getBalance() {
     return parseFloat(localStorage.getItem('balance') || '0');
   }
@@ -45,36 +43,38 @@
   }
   setBalance(getBalance());
 
-  // Генерация уникального ymid (без сервера)
   function makeYmid() {
-    const rnd = Math.random().toString(36).slice(2, 10);
-    return 'client-' + Date.now() + '-' + rnd;
+    return 'client-' + Date.now() + '-' + Math.random().toString(36).slice(2,10);
   }
 
-  document.getElementById('watch').addEventListener('click', async () => {
-    const status = document.getElementById('status');
-    status.textContent = 'Загружаем рекламу...';
+  const watchBtn = document.getElementById('watch');
+  const status = document.getElementById('status');
 
-    try {
-      const ymid = makeYmid();
-
-      // Показ рекламы через SDK
-      const result = await window.show_9687002({ ymid });
-
-      if (result && result.reward_event_type === 'valued') {
-        // Имитация начисления (например, 0.05 монет)
-        const newBal = getBalance() + 0.05;
-        setBalance(newBal);
-        status.textContent = 'Реклама просмотрена, начислено 0.05 монет!';
-      } else {
-        status.textContent = 'Реклама показана, но без начисления.';
-      }
-
-    } catch (err) {
-      console.error(err);
-      status.textContent = 'Ошибка показа рекламы: ' + err.message;
+  // Ждём, пока SDK подгрузит функцию show_9687002
+  const sdkCheck = setInterval(() => {
+    if (typeof window.show_9687002 === 'function') {
+      clearInterval(sdkCheck);
+      watchBtn.disabled = false;
+      watchBtn.textContent = '▶ Смотреть рекламу';
+      watchBtn.addEventListener('click', async () => {
+        status.textContent = 'Загружаем рекламу...';
+        try {
+          const ymid = makeYmid();
+          const result = await window.show_9687002({ ymid });
+          if (result && result.reward_event_type === 'valued') {
+            const newBal = getBalance() + 0.05;
+            setBalance(newBal);
+            status.textContent = 'Реклама просмотрена, начислено 0.05 монет!';
+          } else {
+            status.textContent = 'Реклама показана, но без начисления.';
+          }
+        } catch (err) {
+          console.error(err);
+          status.textContent = 'Ошибка показа рекламы: ' + err.message;
+        }
+      });
     }
-  });
+  }, 300);
 </script>
 </body>
 </html>
