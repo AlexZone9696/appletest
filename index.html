@@ -6,8 +6,9 @@
 <title>Earn Rewards</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="//libtl.com/sdk.js" data-zone="9687002" data-sdk="show_9687002"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-  body { margin:0; font-family: system-ui, sans-serif; background:#f5f7fa; }
+  body { margin:0; font-family: system-ui, sans-serif; background:#f5f7fa; padding-bottom:60px; }
   .header {
     background:#2ecc71; color:white; padding:15px;
     display:flex; align-items:center; gap:10px;
@@ -34,130 +35,135 @@
     border:none; border-radius:8px; font-size:1rem; cursor:pointer;
   }
   .btn:disabled { background:#999; cursor:not-allowed; }
-  .bottom-nav {
-    position:fixed; bottom:0; left:0; right:0; background:#2ecc71;
-    display:flex; justify-content:space-around; padding:8px 0; color:white;
+  
+  /* Toast */
+  .toast {
+    position:fixed; top:20px; right:20px;
+    background:#2ecc71; color:white; padding:10px 15px;
+    border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.2);
+    opacity:0; transform:translateY(-10px);
+    transition:opacity 0.3s, transform 0.3s;
+    z-index:9999;
   }
-  .nav-item { text-align:center; font-size:0.8rem; }
+  .toast.show {
+    opacity:1; transform:translateY(0);
+  }
+
+  /* Bottom navigation */
+  .bottom-nav {
+    position:fixed; bottom:0; left:0; right:0; background:white;
+    display:flex; justify-content:space-around; padding:6px 0;
+    border-top:1px solid #ddd; box-shadow:0 -2px 6px rgba(0,0,0,0.05);
+  }
+  .nav-item {
+    text-align:center; color:#666; font-size:0.8rem; flex:1;
+  }
+  .nav-item i { font-size:1.4rem; display:block; margin-bottom:2px; }
+  .nav-item.active { color:#2ecc71; }
 </style>
 </head>
 <body>
+
 <div class="header">
   <div class="avatar"></div>
   <div class="userinfo">
-    <div class="username" id="username">David Wilson</div>
+    <div class="username">David Wilson</div>
     <div class="balance"><span id="balance">0</span> VET</div>
   </div>
 </div>
 
 <h2>Earn Rewards</h2>
 <div class="card">
-  <div class="row"><span>Total Tasks:</span> <span id="totalTasks">30</span></div>
-  <div class="row"><span>Completed:</span> <span id="completed">0</span></div>
-  <div class="row"><span>Remaining:</span> <span id="remaining">30</span></div>
+  <div class="row"><span>Total Tasks:</span><span id="total">30</span></div>
+  <div class="row"><span>Completed:</span><span id="completed">0</span></div>
+  <div class="row"><span>Remaining:</span><span id="remaining">30</span></div>
   <div class="progress-bar"><div class="progress" id="progress"></div></div>
-  <button class="btn" id="startBtn" disabled>Loading...</button>
-  <div id="status" style="margin-top:8px; font-size:0.9rem; color:#555;"></div>
+  <button id="watch" class="btn">Start Task</button>
 </div>
 
+<div id="toast" class="toast">Оплата получена!</div>
+
 <div class="bottom-nav">
-  <div class="nav-item">🏠<br>Home</div>
-  <div class="nav-item">💰<br>Earn</div>
-  <div class="nav-item">💳<br>Withdraw</div>
-  <div class="nav-item">👤<br>Profile</div>
+  <div class="nav-item active"><i class="fa-solid fa-house"></i>Home</div>
+  <div class="nav-item"><i class="fa-solid fa-coins"></i>Earn</div>
+  <div class="nav-item"><i class="fa-solid fa-wallet"></i>Withdraw</div>
+  <div class="nav-item"><i class="fa-solid fa-user"></i>Profile</div>
 </div>
 
 <script>
-const MAX_TASKS = 30;
-const REWARD_PER_AD = 0.5; // сколько VET начислять за просмотр
-const WAIT_TIME = 3 * 1000; // 20 секунд
+  const maxTasks = 30;
+  const rewardPerAd = 2;
+  const cooldown = 20 * 1000; // 20 секунд
 
-function setCookie(name,value,days) {
-  const d = new Date();
-  d.setTime(d.getTime() + (days*24*60*60*1000));
-  document.cookie = name + "=" + value + ";expires=" + d.toUTCString() + ";path=/";
-}
-function getCookie(name) {
-  let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-  return match ? match[2] : null;
-}
+  let completed = parseInt(getCookie("completed") || 0);
+  let balance = parseFloat(getCookie("balance") || 0);
+  let lastTime = parseInt(getCookie("lastTime") || 0);
 
-let balance = parseFloat(getCookie("balance")) || 0;
-let completed = parseInt(getCookie("completed")) || 0;
-let lastReset = getCookie("lastReset");
+  updateUI();
 
-function resetDailyIfNeeded() {
-  const today = new Date().toDateString();
-  if (lastReset !== today) {
-    completed = 0;
-    setCookie("completed", completed, 7);
-    setCookie("lastReset", today, 7);
-    lastReset = today;
-  }
-}
-resetDailyIfNeeded();
-
-const balanceEl = document.getElementById("balance");
-const completedEl = document.getElementById("completed");
-const remainingEl = document.getElementById("remaining");
-const progressEl = document.getElementById("progress");
-const startBtn = document.getElementById("startBtn");
-const statusEl = document.getElementById("status");
-
-function updateUI() {
-  balanceEl.textContent = balance.toFixed(2);
-  completedEl.textContent = completed;
-  remainingEl.textContent = MAX_TASKS - completed;
-  progressEl.style.width = ((completed / MAX_TASKS) * 100) + "%";
-}
-updateUI();
-
-// Ждем SDK
-const sdkCheck = setInterval(() => {
-  if (typeof window.show_9687002 === 'function') {
-    clearInterval(sdkCheck);
-    startBtn.disabled = false;
-    startBtn.textContent = "Start Task ▶";
-  }
-}, 300);
-
-let canWatch = true;
-
-startBtn.addEventListener("click", () => {
-  resetDailyIfNeeded();
-  if (!canWatch) {
-    statusEl.textContent = "Подождите 20 секунд перед следующей рекламой.";
-    return;
-  }
-  if (completed >= MAX_TASKS) {
-    statusEl.textContent = "Дневной лимит задач выполнен.";
-    return;
-  }
-
-  canWatch = false;
-  startBtn.disabled = true;
-  statusEl.textContent = "Загружаем рекламу...";
-
-  show_9687002().then(result => {
-    if (result && result.reward_event_type === 'valued') {
-      completed++;
-      balance += REWARD_PER_AD;
-      setCookie("completed", completed, 7);
-      setCookie("balance", balance, 7);
-      updateUI();
-      statusEl.textContent = "Реклама просмотрена! Награда получена.";
-    } else {
-      statusEl.textContent = "Реклама показана, но без награды.";
+  document.getElementById("watch").addEventListener("click", () => {
+    const now = Date.now();
+    if (completed >= maxTasks) {
+      alert("Вы достигли лимита на сегодня!");
+      return;
     }
-  }).catch(err => {
-    statusEl.textContent = "Ошибка показа рекламы: " + err.message;
-  }).finally(() => {
-    setTimeout(() => {
-      canWatch = true;
-      if (completed < MAX_TASKS) startBtn.disabled = false;
-    }, WAIT_TIME);
+    if (now - lastTime < cooldown) {
+      alert(`Подождите ${Math.ceil((cooldown - (now - lastTime))/1000)} секунд`);
+      return;
+    }
+    if (typeof window.show_9687002 !== "function") {
+      alert("Реклама ещё не загрузилась");
+      return;
+    }
+    show_9687002().then(res => {
+      if (res.reward_event_type === "valued") {
+        completed++;
+        balance += rewardPerAd;
+        lastTime = Date.now();
+        setCookie("completed", completed, 1);
+        setCookie("balance", balance, 1);
+        setCookie("lastTime", lastTime, 1);
+        updateUI();
+        showToast("Оплата получена!");
+      }
+    }).catch(err => {
+      alert("Ошибка показа рекламы");
+      console.error(err);
+    });
   });
-});
+
+  function updateUI() {
+    document.getElementById("completed").textContent = completed;
+    document.getElementById("remaining").textContent = maxTasks - completed;
+    document.getElementById("balance").textContent = balance.toFixed(2);
+    document.getElementById("progress").style.width = (completed / maxTasks * 100) + "%";
+  }
+  function setCookie(name, value, days) {
+    let expires = "";
+    if (days) {
+      const date = new Date();
+      date.setTime(date.getTime() + (days*24*60*60*1000));
+      expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+  }
+  function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for(let i=0;i < ca.length;i++) {
+      let c = ca[i];
+      while (c.charAt(0)==' ') c = c.substring(1,c.length);
+      if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    }
+    return null;
+  }
+  function showToast(msg) {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 3000);
+  }
 </script>
+
 </body>
 </html>
