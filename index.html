@@ -60,6 +60,20 @@
   }
   .nav-item i { font-size:1.4rem; display:block; margin-bottom:2px; }
   .nav-item.active { color:#2ecc71; }
+
+  .daily-task {
+  display:flex; justify-content:space-between; align-items:center;
+}
+.join-btn {
+  background:white; border:1px solid #2ecc71; color:#2ecc71;
+  padding:6px 10px; border-radius:6px; font-size:0.85rem;
+  display:flex; align-items:center; gap:4px; text-decoration:none;
+}
+.refer-btn {
+  background:#2ecc71; border:none; color:white;
+  padding:6px 10px; border-radius:6px; font-size:0.85rem;
+  display:flex; align-items:center; gap:4px; cursor:pointer;
+}
 </style>
 </head>
 <body>
@@ -82,6 +96,25 @@
 </div>
 
 <div id="toast" class="toast">Оплата получена!</div>
+
+
+  <h2>Daily Tasks</h2>
+<div class="card">
+  <div class="daily-task">
+    <div>
+      <div style="font-weight:600;">Nexo Official</div>
+      <div style="color:#2ecc71; font-size:0.9rem;">Reward: VET 2.00</div>
+    </div>
+    <div style="display:flex; gap:6px;">
+      <a href="https://t.me/nexo" target="_blank" class="join-btn">
+        <i class="fa-brands fa-telegram"></i> Join
+      </a>
+      <button class="refer-btn">
+        <i class="fa-solid fa-users"></i> Refer & Earn
+      </button>
+    </div>
+  </div>
+</div>
 
 <div class="bottom-nav">
   <div class="nav-item active"><i class="fa-solid fa-house"></i>Home</div>
