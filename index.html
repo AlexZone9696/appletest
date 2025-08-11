@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Заработок на рекламе — Monetag</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Monetag SDK — замени data-zone на свой ID -->
+  <script src="https://a.monetag.com/tma/sdk.js"
+          data-zone="9687002"
+          data-sdk="show_9687002"></script>
+
+  <style>
+    body{font-family:sans-serif;padding:20px;background:#f6f8fa;}
+    .card{max-width:500px;margin:auto;background:#fff;padding:20px;
+          border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.05);}
+    h1{font-size:1.4rem;margin-bottom:10px;}
+    button{padding:10px 16px;font-size:1rem;border:none;border-radius:8px;
+           background:#1f8ef1;color:#fff;cursor:pointer;}
+    #status{margin-top:10px;color:#555;}
+    #balance{font-weight:bold;}
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Смотри рекламу — зарабатывай</h1>
+  <p>Текущий баланс: <span id="balance">0.00</span> монет</p>
+  <button id="watch">▶ Смотреть рекламу</button>
+  <div id="status"></div>
+</div>
+
+<script>
+  // Telegram WebApp
+  const tg = window.Telegram?.WebApp;
+  if (tg) tg.expand();
+
+  // Храним баланс в localStorage
+  function getBalance() {
+    return parseFloat(localStorage.getItem('balance') || '0');
+  }
+  function setBalance(v) {
+    localStorage.setItem('balance', v.toFixed(2));
+    document.getElementById('balance').textContent = v.toFixed(2);
+  }
+  setBalance(getBalance());
+
+  // Генерация уникального ymid (без сервера)
+  function makeYmid() {
+    const rnd = Math.random().toString(36).slice(2, 10);
+    return 'client-' + Date.now() + '-' + rnd;
+  }
+
+  document.getElementById('watch').addEventListener('click', async () => {
+    const status = document.getElementById('status');
+    status.textContent = 'Загружаем рекламу...';
+
+    try {
+      const ymid = makeYmid();
+
+      // Показ рекламы через SDK
+      const result = await window.show_9687002({ ymid });
+
+      if (result && result.reward_event_type === 'valued') {
+        // Имитация начисления (например, 0.05 монет)
+        const newBal = getBalance() + 0.05;
+        setBalance(newBal);
+        status.textContent = 'Реклама просмотрена, начислено 0.05 монет!';
+      } else {
+        status.textContent = 'Реклама показана, но без начисления.';
+      }
+
+    } catch (err) {
+      console.error(err);
+      status.textContent = 'Ошибка показа рекламы: ' + err.message;
+    }
+  });
+</script>
+</body>
+</html>
