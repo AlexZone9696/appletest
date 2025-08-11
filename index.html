@@ -73,9 +73,9 @@
     display:flex; align-items:center; gap:4px; text-decoration:none;
   }
   .verify-btn {
-    background:#1f8ef1; border:none; color:white;
+    background:#ccc; border:none; color:white;
     padding:6px 10px; border-radius:6px; font-size:0.85rem;
-    cursor:pointer;
+    cursor:not-allowed;
   }
 
   /* Refer & Earn fixed button */
@@ -88,9 +88,7 @@
     box-shadow:0 4px 8px rgba(0,0,0,0.15);
     z-index:950;
   }
-  .refer-fixed i {
-    font-size:1.2rem;
-  }
+  .refer-fixed i { font-size:1.2rem; }
 </style>
 </head>
 <body>
@@ -123,7 +121,7 @@
       <a href="https://t.me/cryptonews" target="_blank" class="join-btn">
         <i class="fa-brands fa-telegram"></i> Join
       </a>
-      <button class="verify-btn">Verify</button>
+      <button class="verify-btn" disabled>Verify</button>
     </div>
   </div>
   <hr>
@@ -136,33 +134,7 @@
       <a href="https://t.me/airdrophunters" target="_blank" class="join-btn">
         <i class="fa-brands fa-telegram"></i> Join
       </a>
-      <button class="verify-btn">Verify</button>
-    </div>
-  </div>
-<hr>
-  <div class="daily-task">
-    <div>
-      <div style="font-weight:600;">Crypto News Channel</div>
-      <div style="color:#2ecc71; font-size:0.9rem;">Reward: VET 2.00</div>
-    </div>
-    <div style="display:flex; gap:6px;">
-      <a href="https://t.me/cryptonews" target="_blank" class="join-btn">
-        <i class="fa-brands fa-telegram"></i> Join
-      </a>
-      <button class="verify-btn">Verify</button>
-    </div>
-  </div>
-  <hr>
-  <div class="daily-task">
-    <div>
-      <div style="font-weight:600;">Airdrop Hunters</div>
-      <div style="color:#2ecc71; font-size:0.9rem;">Reward: VET 3.00</div>
-    </div>
-    <div style="display:flex; gap:6px;">
-      <a href="https://t.me/airdrophunters" target="_blank" class="join-btn">
-        <i class="fa-brands fa-telegram"></i> Join
-      </a>
-      <button class="verify-btn">Verify</button>
+      <button class="verify-btn" disabled>Verify</button>
     </div>
   </div>
 </div>
@@ -222,6 +194,30 @@
     }).catch(err => {
       alert("Ошибка показа рекламы");
       console.error(err);
+    });
+  });
+
+  // Daily tasks logic
+  document.querySelectorAll(".daily-task").forEach(task => {
+    const joinBtn = task.querySelector(".join-btn");
+    const verifyBtn = task.querySelector(".verify-btn");
+    const rewardText = task.querySelector("div[style*='Reward']").textContent;
+    const reward = parseFloat(rewardText.replace(/[^0-9.]/g, ""));
+
+    joinBtn.addEventListener("click", () => {
+      verifyBtn.style.background = "#2ecc71";
+      verifyBtn.style.cursor = "pointer";
+      verifyBtn.disabled = false;
+    });
+
+    verifyBtn.addEventListener("click", () => {
+      if (verifyBtn.disabled) return;
+      balance += reward;
+      setCookie("balance", balance, 1);
+      updateUI();
+      showToast("Подписка подтверждена!");
+      verifyBtn.disabled = true;
+      verifyBtn.style.opacity = "0.6";
     });
   });
 
